@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员登录</title>
+
+    <style>
+        body{
+<!--            background:#ccc;-->
+        }
+        .commonlink{
+            text-decoration: none;
+            color: #000;
+        }
+
+
+    </style>
+</head>
+
+<center>
+    <h1>疫情上报</h1>
+    <table cellspacing="100">
+        <tr>
+            <td>
+                <div>
+                    <form action="confirmed" method="GET">
+                        {% csrf_token %}
+                        <center>
+                            <span>用户名：<input type="text" name="username"></span>
+                            <br/>
+                            <span>密码：<input type="password" name="password"></span>
+                            <br/>
+<!--                            <a class="commonlink" href="{% url 'hospital_confirmed' %}"></a>-->
+                            <span><input type="submit" name="submit1" value="登录"></span>
+                        </center>
+                    </form>
+                </div>
+            </td>
+        </tr>
+    </table>
+</center>
+
+<body>
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>疫情上报</title>
+</head>
+
+
+<body>
+<center>
+    <h1>疫情上报</h1>
+    <form method="post" enctype="multipart/form-data" action="." id="fileform">
+        <!-- Django中需要POST数据的地方都必须有csrf_token-->
+        {% csrf_token %}
+        <div>
+            <br/><br/>
+            本地文件：<input onchange="showFilename(this.files[0])" type="file" name="myfile" id="inputfile"
+                        aria-describedby="inputGroupFileAddon03" accept=".csv">
+        </div>
+        <br/><br/>
+        <table cellspacing="20" cellpadding="20">
+            <tr>
+                <td><input class="btn btn-outline-primary" type="submit" onclick="submitCSV()" value="确认上传"></td>
+                <td><input class="btn btn-outline-info" type="reset" value="重置文件"></td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <b>本医院现存病例：无症状确诊：0 轻症：1 重症：2 已治愈：3 死亡：4</b>
+            </tr>
+            <tr>
+                <b>刚刚上传的文件中，包含：
+                    <ul>
+                        <li>
+                            无症状确诊：0例
+                        </li>
+                        <li>
+                            轻症患者：1列
+                        </li>
+                        <li>
+                            重症患者：2例
+                        </li>
+                        <li>
+                            已治愈患者：3例
+                        </li>
+                        <li>
+                            死亡患者：4例
+                        </li>
+                    </ul>
+                </b>
+            </tr>
+        </table>
+        <!-- 显示文件名 -->
+        <script>
+            function showFilename(file) {
+                $("#filename_label").html(file.name);
+            }
+
+            function submitCSV() {
+                var fileInput = $('#inputfile').get(0).files[0];
+                console.info(fileInput);
+                if (fileInput) {
+                    $("#fileform").submit();
+                    alert("上传成功！")
+                } else {
+                    alert("请选择上传文件！");
+                }
+            }
+
+
+
+
+
+        </script>
+    </form>
+</center>
+
+</body>
+
+</html>
