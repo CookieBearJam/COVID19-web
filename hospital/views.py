@@ -14,8 +14,8 @@ CODED_LOCATION = {}  # 用于记录确切的地理编码（key为元组）
 # 使用相应的url来调用相应的函数
 def index(request):
     # 初始化数据，这个要放到其他的地方执行
-    filename = "static/city.xml"
-    get_data(filename)
+    # filename = "static/city.xml"
+    # get_data(filename)
     return render(request, 'index.html')
 
 
@@ -83,6 +83,7 @@ def parse_csv(filepath):
         rows = [row for row in csv_reader]
         print(rows)
     # 判断上传的数据是否有误，存储实例模型
+    # 需要上传的模型有
 
 
 def choose_province(request):
@@ -174,4 +175,3 @@ def get_data(filename):
     STRING_LOCATION.update(temp_province_dict)
     CODED_LOCATION.update(temp_province_dict_specified)
 
-    # print_specified_dict(CODED_LOCATION)

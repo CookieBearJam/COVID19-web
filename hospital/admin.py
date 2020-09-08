@@ -4,8 +4,6 @@ from hospital.views import search_code_by_name, CODED_LOCATION
 
 from hospital.models import Hospital, Patient, Pstatus, Supplies, Track
 
-# Register your models here.
-
 admin.site.site_header = '疫情防控管理平台'
 object_per_page = 8  # 规定每个页面展示的对象数量
 
@@ -13,7 +11,6 @@ object_per_page = 8  # 规定每个页面展示的对象数量
 # 新建医院的时候需要同时新建一条除了关联医院id之外，全都为0的supplies记录,这是医院管理类
 class PstatusAdmin(admin.ModelAdmin):
     list_display = ['p_id', 'status', 'day']
-    # search_fields = ['p_id', 'status', 'day']
     list_per_page = object_per_page
 
 
@@ -58,14 +55,11 @@ class HospitalAdmin(admin.ModelAdmin):
     form = HospitalForm
     inlines = [SuppliesInline, ]
     list_per_page = object_per_page
-    # fieldsets = [
-    #     (None, {'fields': ['name', 'address', 'tel', 'contact', 'username', 'passwd', 'mild_left', 'severe_left']}),
-    #     (None, {'fields': ['province', 'city', 'district']})
-    # ]
     list_display = ['h_id', 'name', 'address', 'tel', 'contact', 'username', 'passwd', 'mild_left', 'severe_left',
                     'province', 'city', 'district']
-
-    change_form_template = 'area.html'  # 为了使用模板
+    fields = ('name', 'address', 'tel', 'contact', 'username', 'passwd', 'mild_left', 'severe_left',
+              ('province', 'city', 'district'))
+    change_form_template = 'admin/area.html'  # 为了使用模板
 
     # 重写保存model的函数以实现创建触发器
     def save_model(self, request, obj, form, change):

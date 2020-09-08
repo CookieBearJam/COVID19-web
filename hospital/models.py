@@ -130,8 +130,7 @@ class Hospital(models.Model):
     class Meta:
         managed = False
         db_table = 'hospital'
-        # verbose_name_plural = '医院'
-        verbose_name = '医院'
+        verbose_name_plural = verbose_name = '医院'
 
 
 def __str__(self):

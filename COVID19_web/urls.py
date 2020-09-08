@@ -26,7 +26,7 @@ urlpatterns = [
     path('city/', choose_city),
     path('district/', choose_district),
 
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls, views.get_data("static/city.xml")),
     path('', views.index, name='index'),
 
     path('upload/', views.upload, name='upload'),  # name用于匹配html中的直接跳转
