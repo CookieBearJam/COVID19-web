@@ -1,15 +1,14 @@
 import csv
 import os
 
-import pymysql
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 
 from hospital.models import Hospital
 
 # LOCATION = {'吉林省': {'长春市': ['南关区', '朝阳区', '二道区', '绿园区']}}
-LOCATION = {}
-CODED_LOCATION = {}  # 用于记录确切的地理编码
+STRING_LOCATION = {}  # 解析得到xml文件中的名字（key为单个字符串）
+CODED_LOCATION = {}  # 用于记录确切的地理编码（key为元组）
 
 
 # 使用相应的url来调用相应的函数
@@ -29,8 +28,6 @@ def hospital_confirmed(request):
     a = request.GET
     username = a.get('username')
     password = a.get('password')
-    # print(username)
-    # print(password)
     identified = hospital_identify(username, password)
     if identified == 1:  # 验证成功则渲染upload页面
         render(request, 'upload.html')
@@ -85,24 +82,24 @@ def parse_csv(filepath):
         csv_reader = csv.reader(f)
         rows = [row for row in csv_reader]
         print(rows)
-    # 判断上传的数据是否有误
+    # 判断上传的数据是否有误，存储实例模型
 
 
 def choose_province(request):
-    province = list(LOCATION.keys())
+    province = list(STRING_LOCATION.keys())
     return JsonResponse(province, safe=False)
 
 
 def choose_city(request):
     province = request.GET.get('p')
-    cities = list(LOCATION[province].keys())
+    cities = list(STRING_LOCATION[province].keys())
     return JsonResponse(cities, safe=False)
 
 
 def choose_district(request):
     province = request.GET.get('p')
     city = request.GET.get('c')
-    districts = LOCATION[province][city]
+    districts = STRING_LOCATION[province][city]
     return JsonResponse(districts, safe=False)
 
 
@@ -174,7 +171,7 @@ def get_data(filename):
         temp_city_dict_specified = {}
     # print("没有编码", temp_province_dict)
     # print("添加编码", temp_province_dict_specified)
-    LOCATION.update(temp_province_dict)
+    STRING_LOCATION.update(temp_province_dict)
     CODED_LOCATION.update(temp_province_dict_specified)
 
-    print_specified_dict(CODED_LOCATION)
+    # print_specified_dict(CODED_LOCATION)

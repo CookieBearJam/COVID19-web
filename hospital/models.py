@@ -1,25 +1,6 @@
 from django.db import models
 
 
-# 在choices里面可以设置显示不同的值，但是最终存储下来为
-# province = [
-#     ('18031', '北京'),
-#     ('27340', '上海')
-# ]
-#
-# city = [
-#     ('2130', '北京市'),
-#     ('3174', '上海市')
-# ]
-#
-# district = [
-#     ('34193', '海淀区'),
-#     ('32410', '闵行区')
-# ]
-#
-# LOCATION = {'吉林省': {'长春市': ['南关区', '朝阳区', '二道区', '绿园区']}}
-
-
 class AuthGroup(models.Model):
     name = models.CharField(unique=True, max_length=150)
 
@@ -149,10 +130,12 @@ class Hospital(models.Model):
     class Meta:
         managed = False
         db_table = 'hospital'
-        verbose_name_plural = verbose_name = '医院'
+        # verbose_name_plural = '医院'
+        verbose_name = '医院'
 
-    def __str__(self):
-        return self.name
+
+def __str__(self):
+    return self.name
 
 
 class Patient(models.Model):

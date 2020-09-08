@@ -58,10 +58,10 @@ class HospitalAdmin(admin.ModelAdmin):
     form = HospitalForm
     inlines = [SuppliesInline, ]
     list_per_page = object_per_page
-    fieldsets = [
-        (None, {'fields': ['name', 'address', 'tel', 'contact', 'username', 'passwd', 'mild_left', 'severe_left']}),
-        (None, {'fields': ['province', 'city', 'district']})
-    ]
+    # fieldsets = [
+    #     (None, {'fields': ['name', 'address', 'tel', 'contact', 'username', 'passwd', 'mild_left', 'severe_left']}),
+    #     (None, {'fields': ['province', 'city', 'district']})
+    # ]
     list_display = ['h_id', 'name', 'address', 'tel', 'contact', 'username', 'passwd', 'mild_left', 'severe_left',
                     'province', 'city', 'district']
 
@@ -82,7 +82,8 @@ class HospitalAdmin(admin.ModelAdmin):
             supplies.h = hospital
             supplies.save()
 
-        super().save_model(request, obj, form, change)
+        super().save_model(request, obj, form, change)  # 一定要有的保存操作！！！！！！
+        # 内置条件已经回同步删除物资，故而不需要重写delete——model
 
 
 # 注册模型到管理类
