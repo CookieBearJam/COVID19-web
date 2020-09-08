@@ -9,11 +9,12 @@ from hospital.models import Hospital
 
 # LOCATION = {'吉林省': {'长春市': ['南关区', '朝阳区', '二道区', '绿园区']}}
 LOCATION = {}
+CODED_LOCATION = {}  # 用于记录确切的地理编码
 
 
 # 使用相应的url来调用相应的函数
 def index(request):
-    # 初始化数据
+    # 初始化数据，这个要放到其他的地方执行
     filename = "static/city.xml"
     get_data(filename)
     return render(request, 'index.html')
@@ -105,6 +106,33 @@ def choose_district(request):
     return JsonResponse(districts, safe=False)
 
 
+# 测试通过省市区查找当前的编码，打印函数
+def print_specified_dict(coded_location):
+    if isinstance(coded_location, dict):
+        for p, c_dict in coded_location.items():
+            print("(", p[0], ",", p[1], ")\n")
+            if isinstance(c_dict, dict):
+                for c, d_dict in c_dict.items():
+                    print("\t(", c[0], ",", c[1], ")\n")
+                    if isinstance(d_dict, dict):
+                        for d, code in d_dict.items():
+                            print("\t\t", d, ":", code, "\n")  # 打印key和value
+
+
+def search_code_by_name(coded_location, province, city, district):
+    code_list = []  # 用一个list把编码传回去
+    for p, c_dict in coded_location.items():
+        if province == p[0]:
+            code_list.append(p[1])
+            for c, d_dict in c_dict.items():
+                if city == c[0]:
+                    code_list.append(c[1])
+                    for d, code in d_dict.items():
+                        if district == d:
+                            code_list.append(code)
+    return code_list
+
+
 # 从xml文件读取数据存储到字典中
 def get_data(filename):
     try:
@@ -118,15 +146,35 @@ def get_data(filename):
     temp_province_dict = {}
     temp_city_dict = {}
     temp_district_list = []
+
+    # 带有地理位置编码的部分临时变量
+    temp_province_dict_specified = {}
+    temp_city_dict_specified = {}
+    temp_district_dict = {}
+
     for province in root.iter("p"):
         for city in province.iter("c"):
             for district in city.iter("d"):
+                if district.text == city.find("cn").text and (len(city.findall("d")) != 1):
+                    continue  # 不添加名字与区相同的市
                 temp_district_list.append(district.text)
-            print(temp_district_list)
+                temp_district_dict.update({district.text: district.get("d_id")})
+            # print("没有编码", temp_district_list)
+            # print("添加编码", temp_district_dict)
             temp_city_dict.update({city.find("cn").text: temp_district_list})
+            temp_city_dict_specified.update({(city.find("cn").text, city.get("c_id")): temp_district_dict})
             temp_district_list = []
-        print(temp_city_dict)
+            temp_district_dict = {}
+        # print("没有编码", temp_city_dict)
+        # print("添加编码", temp_city_dict_specified)
         temp_province_dict.update({province.find("pn").text: temp_city_dict})
+        temp_province_dict_specified.update(
+            {(province.find("pn").text, province.get("p_id")): temp_city_dict_specified})
         temp_city_dict = {}
-    print(temp_province_dict)
+        temp_city_dict_specified = {}
+    # print("没有编码", temp_province_dict)
+    # print("添加编码", temp_province_dict_specified)
     LOCATION.update(temp_province_dict)
+    CODED_LOCATION.update(temp_province_dict_specified)
+
+    print_specified_dict(CODED_LOCATION)

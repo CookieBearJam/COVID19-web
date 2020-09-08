@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from django.forms import ModelForm
+from hospital.views import search_code_by_name, CODED_LOCATION
 
 from hospital.models import Hospital, Patient, Pstatus, Supplies, Track
 
@@ -42,7 +42,6 @@ class SuppliesInline(admin.StackedInline):
 
 class SuppliesAdmin(admin.ModelAdmin):
     list_display = ['h_id', 'n95', 'surgeon', 'ventilator', 'clothe', 'glasses', 'alcohol', 'pants']
-    # search_fields = ['h_id']
     list_per_page = object_per_page
 
 
@@ -71,6 +70,13 @@ class HospitalAdmin(admin.ModelAdmin):
     # 重写保存model的函数以实现创建触发器
     def save_model(self, request, obj, form, change):
         if form.is_valid():
+            code_list = search_code_by_name(CODED_LOCATION, obj.province, obj.city, obj.district)
+            if len(code_list) == 3:
+                obj.province = code_list[0]
+                obj.city = code_list[1]
+                obj.district = code_list[2]
+
+            # 在创建医院的时候同时创建一个supply
             hospital = form.save()
             supplies = Supplies()
             supplies.h = hospital
