@@ -7,14 +7,14 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from hospital.models import Patient, Pstatus, Hospital
 
-# LOCATION = {'吉林省': {'长春市': ['南关区', '朝阳区', '二道区', '绿园区']}}
+# 输出嵌套格式举例：LOCATION = {'吉林省': {'长春市': ['南关区', '朝阳区', '二道区', '绿园区']}}
 STRING_LOCATION = {}  # 解析得到xml文件中的名字（key为单个字符串）
 CODED_LOCATION = {}  # 用于记录确切的地理编码（key为元组）
 # 0->治愈 1->无症状 2->轻症 3->重症 4->死亡
 
-HOSPITAL_NAME = "甲市乙区第一医院"
-HOSPITAL_USERNAME = "demouser"  # 先假设一个全局的用户
-HOSPITAL_PASSWORD = "dempass"
+HOSPITAL_USERNAME = ""  # 先假设一个全局的用户
+HOSPITAL_PASSWORD = ""
+STATUS = {"治愈": 0, "无症状": 1, "轻症": 2, "重症": 3, "死亡": 4}
 
 
 # 使用相应的url来调用相应的函数
@@ -49,13 +49,17 @@ def hospital_identify(username, password_):
         hospital = result.first()
         password = hospital.passwd
         if password == password_:
-            print("验证成功，用户已授权")
+            global HOSPITAL_USERNAME
+            HOSPITAL_USERNAME = username
+            global HOSPITAL_PASSWORD
+            HOSPITAL_PASSWORD = password
+            # print("验证成功，用户已授权")
             return 1
         else:
-            print("密码错误")
+            # print("密码错误")
             return 0
     else:
-        print("医院用户名错误")
+        # print("医院用户名错误")
         return -1
 
 
@@ -73,7 +77,6 @@ def upload(request):
         destination.close()
 
         filename = files.name
-        # parser_ = Parser(os.path.join("./static/upload", filename))
         parse_file(os.path.join("./static/upload", filename))
         render(request, 'upload.html')
         return HttpResponseRedirect('/upload')
@@ -86,9 +89,10 @@ ERROR_INFO = {"ERROR-101": "病案号过长",
               "ERROR-102": "电话号过长",
               "ERROR-103": "日期出现错误，超前时间",
               "ERROR-201": "系统错误：patient表中有多条相同的病人记录",
-              "ERROR-202": "此次上传更新数据中与已有病人状态冲突，请检查病人ID和状态"
+              "ERROR-202": "此次上传更新数据中与已有病人状态冲突，请检查病人ID和状态",
+              "ERROR-203": "此次上传更新数据中有已死亡病人的状态变化，请检查病人ID和装态"
               }
-data_field = {"病案号": 1, "电话": 2, "用户名": 3, "状态": 4, "日期": 5}
+DATA_FIELD = {"病案号": 1, "电话": 2, "用户名": 3, "状态": 4, "日期": 5}
 field_indexes = []  # 存储excel文件中的表头和数据库字段的对应关系
 
 
@@ -112,11 +116,11 @@ def parse_file(filepath):
         data_field_in_file = sheet.row_values(0)  # 获取第一行的内容（即excel的表头）
 
         for value in data_field_in_file:
-            if value not in data_field.keys():
+            if value not in DATA_FIELD.keys():
                 print("字段名称不符")
                 return -4
             else:
-                field_indexes.append(data_field[value])
+                field_indexes.append(DATA_FIELD[value])
 
         save_patient(sheet, row_num, col_num)
         return True
@@ -125,7 +129,8 @@ def parse_file(filepath):
 # 根据读取到的数据，创建对象并保存到数据库中
 def save_patient(sheet, row_num, col_num):
     # 需要用到的临时变量
-    hospital_id = Hospital.objects.filter(username=HOSPITAL_USERNAME)[0].h_id  # 当前登录医院用户对应的医院id
+    hospital_id = Hospital.objects.filter(username=HOSPITAL_USERNAME, passwd=HOSPITAL_PASSWORD)[
+        0].h_id  # 当前登录医院用户对应的医院id
     print(hospital_id)  # 1
     patient_no = ""
     patient_tel = ""
@@ -181,16 +186,24 @@ def save_patient(sheet, row_num, col_num):
 
                 # 获取该病人的id（auto_incremented），插入状态表
                 patient_id = Patient.objects.filter(no=patient_no, tel=patient_tel)[0].p_id
-                print("不存在该病人，新建的病人id为：", patient_id)
+                # print("不存在该病人，新建的病人id为：", patient_id)
 
                 # 更新状态表，新增记录
                 pstatus_new = Pstatus(p_id=patient_id, status=patient_status, day=patient_day)
                 pstatus_new.save()
             elif len(patient_list) == 1:  # 之前存在这样的病人（只有一条）
                 patient_id = patient_list[0].p_id
-                print("已经存在该病人", patient_id)
-                query_status = Pstatus.objects.filter(p_id=patient_id, status=patient_status)
-                if len(query_status) == 0:  # 不会出现冲突的情况
+                # print("已经存在该病人", patient_id)
+
+                death_record = Pstatus.bjects.filter(p_id=patient_id, status=STATUS["死亡"])
+                if len(death_record) == 1:  # 已经宣判死亡的人不可以再进行状态更新
+                    error_data_unit = [patient_id, patient_no, patient_tel, patient_status, patient_day]
+                    create_error_info("ERROR-203", error_data_unit)
+                    continue
+
+                # 其他情况，获取相同记录
+                same_record = Pstatus.objects.filter(p_id=patient_id, status=patient_status)
+                if len(same_record) == 0:  # 不会出现冲突的情况
                     # 新增病人记录
                     pstatus_new = Pstatus(p_id=patient_id, status=patient_status, day=patient_day)
                     pstatus_new.save()
@@ -198,8 +211,9 @@ def save_patient(sheet, row_num, col_num):
                     error_data_unit = [patient_id, patient_no, patient_tel, patient_status, patient_day]
                     create_error_info("ERROR-202", error_data_unit)
                     continue  # 不进行插入操作，记录数据的错误，继续开始下一行的读取
+
             else:
-                print("系统错误：patient表中有多条相同的病人记录")
+                # print("系统错误：patient表中有多条相同的病人记录")
                 error_data_unit = [patient_no, patient_tel, patient_status, patient_day]
                 create_error_info("ERROR-201", error_data_unit)
                 continue  # 停止这行的记录,继续开始下一行
@@ -276,6 +290,7 @@ def print_specified_dict(coded_location):
                             print("\t\t", d, ":", code, "\n")  # 打印key和value
 
 
+# 根据省市区的名字查找编码，是最终存储到数据库的内容
 def search_code_by_name(coded_location, province, city, district):
     code_list = []  # 用一个list把编码传回去
     for p, c_dict in coded_location.items():
@@ -290,7 +305,7 @@ def search_code_by_name(coded_location, province, city, district):
     return code_list
 
 
-# 从xml文件读取数据存储到字典中
+# 从xml文件读取省市区的三级级联数据存储到字典中
 def get_data(filename):
     try:
         import xml.etree.cElementTree as ET

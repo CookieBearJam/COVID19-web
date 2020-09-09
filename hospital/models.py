@@ -150,9 +150,6 @@ class Patient(models.Model):
         db_table = 'patient'
         verbose_name_plural = verbose_name = '病人信息'
 
-    def __str__(self):
-        return self.name
-
 
 class Pstatus(models.Model):
     p = models.OneToOneField(Patient, models.DO_NOTHING, primary_key=True)
@@ -164,9 +161,6 @@ class Pstatus(models.Model):
         db_table = 'pstatus'
         unique_together = (('p', 'status'),)
         verbose_name_plural = verbose_name = '病人状态'
-
-    def __str__(self):
-        return self.name
 
 
 class Supplies(models.Model):
@@ -184,9 +178,6 @@ class Supplies(models.Model):
         db_table = 'supplies'
         verbose_name_plural = verbose_name = '物资'
 
-    def __str__(self):
-        return self.name
-
 
 class Track(models.Model):
     p = models.OneToOneField(Patient, models.DO_NOTHING, primary_key=True)
@@ -202,6 +193,3 @@ class Track(models.Model):
         db_table = 'track'
         unique_together = (('p', 'date_time'),)
         verbose_name_plural = verbose_name = '病人轨迹'
-
-    def __str__(self):
-        return self.name
