@@ -1,10 +1,10 @@
-import csv
 import os
 import datetime
 
 import xlrd
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
+
 from hospital.models import Patient, Pstatus, Hospital
 
 # 输出嵌套格式举例：LOCATION = {'吉林省': {'长春市': ['南关区', '朝阳区', '二道区', '绿园区']}}
@@ -16,6 +16,25 @@ HOSPITAL_USERNAME = ""  # 先假设一个全局的用户
 HOSPITAL_PASSWORD = ""
 STATUS = {"治愈": 0, "无症状": 1, "轻症": 2, "重症": 3, "死亡": 4}
 
+error_data = {}  # 记录错误数据
+ERROR_INFO = {"ERROR-101": "病案号过长",
+              "ERROR-102": "电话号过长",
+              "ERROR-103": "日期出现错误，超前时间",
+              "ERROR-201": "系统错误：patient表中有多条相同的病人记录",
+              "ERROR-202": "此次上传更新数据中与已有病人状态冲突，请检查病人ID和状态",
+              "ERROR-203": "此次上传更新数据中有已死亡病人的状态变化，请检查病人ID和装态"
+              }
+DATA_FIELD = {"病案号": 1, "电话": 2, "用户名": 3, "状态": 4, "日期": 5}
+field_indexes = []  # 存储excel文件中的表头和数据库字段的对应关系
+
+
+class Summary:
+    healthy = 0
+    behavior_less_sum = 0
+    light_sum = 0
+    severe_sum = 0
+    dead = 0
+
 
 # 使用相应的url来调用相应的函数
 def index(request):
@@ -23,7 +42,7 @@ def index(request):
 
 
 def hospital_login(request):
-    return render(request, 'hospital_login.html')
+    return render(request, 'login.html')
 
 
 # 医院用户身份认证入口
@@ -44,6 +63,7 @@ def hospital_confirmed(request):
 
 # 医院用户身份认证DAO
 def hospital_identify(username, password_):
+    print(username, password_)
     result = Hospital.objects.filter(username=username)  # 找出该用户的记录
     if result.exists():  # 有这个用户
         hospital = result.first()
@@ -53,18 +73,27 @@ def hospital_identify(username, password_):
             HOSPITAL_USERNAME = username
             global HOSPITAL_PASSWORD
             HOSPITAL_PASSWORD = password
-            # print("验证成功，用户已授权")
+            print("验证成功，用户已授权")
             return 1
         else:
-            # print("密码错误")
+            print("密码错误")
             return 0
     else:
-        # print("医院用户名错误")
+        print("医院用户名错误")
         return -1
 
 
 # 疫情上报界面的处理逻辑
 def upload(request):
+    status_queryset = {}  # 记录不同状态人数的统计数据
+    status_queryset.update({"healthy": len(Patient.objects.filter(status=0))})
+    status_queryset.update({"no_behavior": len(Patient.objects.filter(status=1))})
+    status_queryset.update({"light": len(Patient.objects.filter(status=2))})
+    status_queryset.update({"severe": len(Patient.objects.filter(status=3))})
+    status_queryset.update({"dead": len(Patient.objects.filter(status=4))})
+
+    print(status_queryset)
+
     if request.method == "POST":  # 请求方法为POST时，进行处理
         files = request.FILES.get("myfile", None)  # 获取上传的文件，如果没有文件，则默认为None
         if not files:
@@ -78,22 +107,10 @@ def upload(request):
 
         filename = files.name
         parse_file(os.path.join("./static/upload", filename))
-        render(request, 'upload.html')
+        render(request, 'upload.html', {'statuses': status_queryset})
         return HttpResponseRedirect('/upload')
     else:
-        return render(request, 'upload.html')
-
-
-error_data = {}  # 记录错误数据
-ERROR_INFO = {"ERROR-101": "病案号过长",
-              "ERROR-102": "电话号过长",
-              "ERROR-103": "日期出现错误，超前时间",
-              "ERROR-201": "系统错误：patient表中有多条相同的病人记录",
-              "ERROR-202": "此次上传更新数据中与已有病人状态冲突，请检查病人ID和状态",
-              "ERROR-203": "此次上传更新数据中有已死亡病人的状态变化，请检查病人ID和装态"
-              }
-DATA_FIELD = {"病案号": 1, "电话": 2, "用户名": 3, "状态": 4, "日期": 5}
-field_indexes = []  # 存储excel文件中的表头和数据库字段的对应关系
+        return render(request, 'upload.html', {'statuses': status_queryset, 'error_info': error_data})
 
 
 def parse_file(filepath):
@@ -128,9 +145,8 @@ def parse_file(filepath):
 
 # 根据读取到的数据，创建对象并保存到数据库中
 def save_patient(sheet, row_num, col_num):
-    # 需要用到的临时变量
-    hospital_id = Hospital.objects.filter(username=HOSPITAL_USERNAME, passwd=HOSPITAL_PASSWORD)[
-        0].h_id  # 当前登录医院用户对应的医院id
+    # 需要用到的临时变量,当前登录医院用户对应的医院id
+    hospital_id = Hospital.objects.filter(username=HOSPITAL_USERNAME, passwd=HOSPITAL_PASSWORD)[0].h_id
     print(hospital_id)  # 1
     patient_no = ""
     patient_tel = ""
@@ -140,80 +156,87 @@ def save_patient(sheet, row_num, col_num):
     is_field_valid = True
 
     for i in range(1, row_num):
+        print("现在在解析第", i, "条数据")
         is_field_valid = True
         row = sheet.row_values(i)  # 获取每一行的数据
         for j in range(0, col_num):
             # 根据当前的列数找到此列对应的字段在数据库终的字段的下标
             field_index = field_indexes[j]
-            # print("当前单元格的下标", field_index)  # 1,2,3,5
             if field_index == 1:  # 病案号
                 if len(str(row[j])) <= 64:
                     patient_no = str(int(row[j]))  # float to string
-                    # print("病人病案号", patient_no)
                 else:
-                    # print("病案号过长")
                     create_error_info("ERROR-101", str(int(row[j])))
                     is_field_valid = False
                     break  # 不再对当前这条数据操作，直接读取下一条数据
             elif field_index == 2:  # 电话，满足长度小于20的字符串
                 if len(str(row[j])) <= 20:
                     patient_tel = str(int(row[j]))  # float to string
-                    # print("病人电话", patient_tel)
                 else:
-                    # print("电话号码过长")
                     create_error_info("ERROR-102", str(int(row[j])))
                     is_field_valid = False
                     break  # 不再对当前这条数据操作，直接读取下一条数据
             elif field_index == 4:  # 状态
                 patient_status = int(row[j])
-                # print("病人状态", patient_status)
             elif field_index == 5:  # 日期
                 dt = xlrd.xldate.xldate_as_datetime(row[j], 0)  # 0和1用于区分是以1900作为标准还是以1904作为标准
                 patient_day = datetime.date(dt.year, dt.month, dt.day)  # 将excel表格中的日期数据转换为python中的日期格式
-                # print("病人的日期", patient_day)
+                print(patient_day)
                 if today < patient_day:  # 录入的日期在今天之后
-                    # print("日期出现错误")
                     create_error_info("ERROR-103", patient_day)
                     is_field_valid = False
                     break  # 不再对当前这条数据操作，直接读取下一条数据
+
         if is_field_valid:  # 如果数据是正确的，才会进行这条数据的存储
-            # 当一行的数据错误异常处理完成之后，直接进行存储操作
+            # 当一行的数据错误异常处理完成之后，将要进行存储操作
+            # 找到该病案号、电话号的病人
             patient_list = Patient.objects.filter(no=patient_no, tel=patient_tel)
-            if len(patient_list) == 0:  # 之前不存在这样的病人
+            # 之前不存在这样的病人，直接插入病人表，同时修改病人状态表，也不需要重新找最新的状态
+            if len(patient_list) == 0:
                 # 创建一个新的病人，更新病人表中的记录，插入数据
                 patient_new = Patient(h_id=hospital_id, no=patient_no, tel=patient_tel, status=patient_status)
                 patient_new.save()
 
                 # 获取该病人的id（auto_incremented），插入状态表
                 patient_id = Patient.objects.filter(no=patient_no, tel=patient_tel)[0].p_id
-                # print("不存在该病人，新建的病人id为：", patient_id)
+                print("新建一个病人", patient_id, patient_status)
 
                 # 更新状态表，新增记录
                 pstatus_new = Pstatus(p_id=patient_id, status=patient_status, day=patient_day)
                 pstatus_new.save()
-            elif len(patient_list) == 1:  # 之前存在这样的病人（只有一条）
+                # 之前存在这样的病人（只有一条）
+            elif len(patient_list) == 1:
                 patient_id = patient_list[0].p_id
-                # print("已经存在该病人", patient_id)
+                print("此时单元格的病人id", patient_id)
+                print("此时病人的状态", patient_status)
 
-                death_record = Pstatus.bjects.filter(p_id=patient_id, status=STATUS["死亡"])
-                if len(death_record) == 1:  # 已经宣判死亡的人不可以再进行状态更新
+                # 先判断是否为已经死亡的病人
+                death_record = Pstatus.objects.filter(p_id=patient_id, status=STATUS["死亡"])  # 找到存在死亡状态的病人记录
+                # 已经宣判死亡的人不可再进行状态更新
+                if len(death_record) == 1:
                     error_data_unit = [patient_id, patient_no, patient_tel, patient_status, patient_day]
                     create_error_info("ERROR-203", error_data_unit)
                     continue
 
-                # 其他情况，获取相同记录
-                same_record = Pstatus.objects.filter(p_id=patient_id, status=patient_status)
+                # 再查找是否与状态表中原来记录的重复（一个病人不能有两条相同状态的记录）
+                same_record = Pstatus.objects.filter(p_id=patient_id, status=patient_status)  # 找到跟当前需要存储的病人id和状态相同的记录
                 if len(same_record) == 0:  # 不会出现冲突的情况
-                    # 新增病人记录
+                    # 在新增病人状态的时候，需要修改病人信息表中的状态为最新
+                    latest_record_date = Pstatus.objects.filter(p_id=patient_id).order_by("-day")[0].day  # 因为还没有存储到？
+                    print("之前最新的日期", latest_record_date, "现在这条数据的日期", patient_day)
+                    if latest_record_date < patient_day:  # 如果今天的日期比当前数据库中的最晚记录日期要晚
+                        p_former = Patient.objects.get(p_id=patient_id)
+                        p_former.status = patient_status  # 更新病人状态为最新数据
+                        p_former.save()
+                    # 新增病人的状态记录
                     pstatus_new = Pstatus(p_id=patient_id, status=patient_status, day=patient_day)
                     pstatus_new.save()
                 else:
+                    # 其他情况即已经存在相同的病人状态记录，则不进行更新
                     error_data_unit = [patient_id, patient_no, patient_tel, patient_status, patient_day]
                     create_error_info("ERROR-202", error_data_unit)
                     continue  # 不进行插入操作，记录数据的错误，继续开始下一行的读取
-
             else:
-                # print("系统错误：patient表中有多条相同的病人记录")
                 error_data_unit = [patient_no, patient_tel, patient_status, patient_day]
                 create_error_info("ERROR-201", error_data_unit)
                 continue  # 停止这行的记录,继续开始下一行
@@ -233,6 +256,13 @@ def create_error_info(error_code, varied_para):
         else:  # tuple形式
             tuple_list = [error_data[error_code], (ERROR_INFO[error_code], varied_para)]
             error_data[error_code] = tuple_list
+
+
+# def parse_error_data():
+#     for value in error_data.values():
+#         if isinstance(value, list):
+#             for tup in value:
+#                 if isinstance(tup, tuple):
 
 
 # 测试部分，会把病案号、电话号码、状态和日期存成float，str
@@ -331,20 +361,14 @@ def get_data(filename):
                     continue  # 不添加名字与区相同的市
                 temp_district_list.append(district.text)
                 temp_district_dict.update({district.text: district.get("d_id")})
-            # print("没有编码", temp_district_list)
-            # print("添加编码", temp_district_dict)
             temp_city_dict.update({city.find("cn").text: temp_district_list})
             temp_city_dict_specified.update({(city.find("cn").text, city.get("c_id")): temp_district_dict})
             temp_district_list = []
             temp_district_dict = {}
-        # print("没有编码", temp_city_dict)
-        # print("添加编码", temp_city_dict_specified)
         temp_province_dict.update({province.find("pn").text: temp_city_dict})
         temp_province_dict_specified.update(
             {(province.find("pn").text, province.get("p_id")): temp_city_dict_specified})
         temp_city_dict = {}
         temp_city_dict_specified = {}
-    # print("没有编码", temp_province_dict)
-    # print("添加编码", temp_province_dict_specified)
     STRING_LOCATION.update(temp_province_dict)
     CODED_LOCATION.update(temp_province_dict_specified)

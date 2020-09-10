@@ -15,7 +15,8 @@
         <div>
             <br/><br/>
             本地文件：<input onchange="showFilename(this.files[0])" type="file" name="myfile" id="inputfile"
-                        aria-describedby="inputGroupFileAddon03" accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                        aria-describedby="inputGroupFileAddon03"
+                        accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
         </div>
         <br/><br/>
         <table cellspacing="20" cellpadding="20">
@@ -26,28 +27,17 @@
         </table>
         <table>
             <tr>
-                <b>本医院现存病例：无症状确诊：0 轻症：1 重症：2 已治愈：3 死亡：4</b>
+                <b>更新成功，本医院目前疫情数据如下：</b>
+                <ul>
+                    <li>无症状确诊：{{ statuses.healthy }}例</li>
+                    <li>轻症患者：{{ statuses.no_behavior }}例</li>
+                    <li>重症患者：{{ statuses.light }}例</li>
+                    <li>已治愈患者：{{ statuses.severe }}例</li>
+                    <li>死亡患者：{{ statuses.dead }}例</li>
+                </ul>
             </tr>
             <tr>
-                <b>刚刚上传的文件中，包含：
-                    <ul>
-                        <li>
-                            无症状确诊：0例
-                        </li>
-                        <li>
-                            轻症患者：1列
-                        </li>
-                        <li>
-                            重症患者：2例
-                        </li>
-                        <li>
-                            已治愈患者：3例
-                        </li>
-                        <li>
-                            死亡患者：4例
-                        </li>
-                    </ul>
-                </b>
+                <b>刚刚上传的文件中，包含以下错误数据：</b>
             </tr>
         </table>
         <!-- 显示文件名 -->
@@ -66,6 +56,18 @@
                     alert("请选择上传文件！");
                 }
             }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

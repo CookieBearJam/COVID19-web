@@ -10,7 +10,7 @@ object_per_page = 8  # 规定每个页面展示的对象数量
 
 # 新建医院的时候需要同时新建一条除了关联医院id之外，全都为0的supplies记录,这是医院管理类
 class PstatusAdmin(admin.ModelAdmin):
-    list_display = ['p_id', 'status', 'day']
+    list_display = ['s_id', 'p', 'status', 'day']
     list_per_page = object_per_page
 
 
@@ -28,7 +28,6 @@ class PatientAdmin(admin.ModelAdmin):
 # 这是物资编辑的管理类
 class TrackAdmin(admin.ModelAdmin):
     list_display = ['p_id', 'date_time', 'longitude', 'latitude', 'description', 'location', 'district']
-    # search_fields = ['district']
     list_per_page = object_per_page
 
 

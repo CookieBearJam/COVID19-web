@@ -5,52 +5,50 @@
     <title>Title</title>
 </head>
 <body>
-<div class="bg">
-    <h2>欢迎登陆疫情防控平台</h2>
-    <div class="login-top">
-        <h1>LOGIN FORM</h1>
-        <form class="form-horizontal" role="form">
-            <!--第1行：账号-->
-            <div class="form-group">
-                <label for="name" class="col-sm-3 control-label">User Name：</label>
-                <div class="col-sm-8">
-                    <input type="text" id="name" class="form-control" placeholder="请输入用户名">
-                </div>
-            </div>
-            <!--第2行：密码-->
-            <div class="form-group">
-                <label for="password" class="col-sm-3 control-label">Password：</label>
-                <div class="col-sm-8">
-                    <input type="password" id="password" class="form-control" placeholder="请输入密码">
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-offset-3 col-sm-5">
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox">请记住我
-                        </label>
+<center>
+    <div class="bg">
+        <h2>欢迎登陆疫情防控平台</h2>
+        <div class="login-top">
+            <h1>医生登录</h1>
+            <form action="confirmed" method="GET" class="form-horizontal" role="form">
+                <!--第1行：账号-->
+                <div class="form-group">
+                    <label for="name" class="col-sm-3 control-label">用户名：</label>
+                    <div class="col-sm-8">
+                        <input type="text" id="name" name="username" class="form-control" placeholder="请输入用户名">
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="forgot col-sm-offset-2 col-sm-10">
-                    <a href="#">forgot Password</a>
-                    <input type="submit" value="Login">
-                    <!--<button type="submit" class="btn btn-success">登录</button>-->
+                <!--第2行：密码-->
+                <div class="form-group">
+                    <label for="password" class="col-sm-3 control-label">密码：</label>
+                    <div class="col-sm-8">
+                        <input type="password" id="password" name="password" class="form-control" placeholder="请输入密码">
+                    </div>
                 </div>
-            </div>
-        </form>
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-5">
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox">请记住我
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="forgot col-sm-offset-2 col-sm-10">
+                        <a href="#">忘记密码</a>
+                        <input type="submit" name="submit1" value="登录">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <!--第3框：页面版权说明-->
+        <div class="copyright">
+            <p>Copyright &copy; 2020.面向领域实践-Group7-All rights reserved.</p>
+        </div>
     </div>
-    <!--第2框：新用户注册框-->
-    <div class="login-bottom">
-        <h3>New User &nbsp;<a href="#">Register</a>&nbsp Here</h3>
-    </div>
-    <!--第3框：页面版权说明-->
-    <div class="copyright">
-        <p>Copyright &copy; 2020.面向领域实践-Group7-All rights reserved.</p>
-    </div>
-</div>
+</center>
+
 
 <!-- 7.引入jQuery (Bootstrap 的 JavaScript 插件需要引入 jQuery) -->
 <script src="lib/jquery/jquery-1.11.0.min.js"></script>

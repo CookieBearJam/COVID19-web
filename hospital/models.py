@@ -112,29 +112,23 @@ class DjangoSession(models.Model):
 
 
 class Hospital(models.Model):
-    # 在这里面进行xml文件的解析和字典的初始化
-
     h_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=256, verbose_name='名字')
-    address = models.CharField(max_length=512, blank=True, null=True, verbose_name='地址')
-    tel = models.CharField(max_length=20, blank=True, null=True, verbose_name='联系电话')
-    contact = models.CharField(max_length=10, blank=True, null=True, verbose_name='联系人')
-    username = models.CharField(max_length=15, verbose_name='用户名')
-    passwd = models.CharField(max_length=50, verbose_name='登录密码')
-    mild_left = models.IntegerField(blank=True, null=True, verbose_name='轻症剩余')
-    severe_left = models.IntegerField(blank=True, null=True, verbose_name='重症剩余')
-    province = models.CharField(max_length=10, verbose_name='省')  # 只修改了显示的名字
-    city = models.CharField(max_length=10, verbose_name='市')
-    district = models.CharField(max_length=10, verbose_name='区/县')
+    name = models.CharField(max_length=256, verbose_name="医院名称")
+    address = models.CharField(max_length=512, blank=True, null=True, verbose_name="医院地址")
+    tel = models.CharField(max_length=20, blank=True, null=True, verbose_name="联系人电话")
+    contact = models.CharField(max_length=10, blank=True, null=True, verbose_name="联系人姓名")
+    username = models.CharField(max_length=15, verbose_name="用户名")
+    passwd = models.CharField(max_length=50, verbose_name="密码")
+    mild_left = models.IntegerField(blank=True, null=True, verbose_name="轻症剩余")
+    severe_left = models.IntegerField(blank=True, null=True, verbose_name="重症剩余")
+    province = models.CharField(max_length=10, null=False, verbose_name="省")
+    district = models.CharField(max_length=10, null=False, verbose_name="区/县")
+    city = models.CharField(max_length=10, null=False, verbose_name="市")
 
     class Meta:
         managed = False
         db_table = 'hospital'
         verbose_name_plural = verbose_name = '医院'
-
-
-def __str__(self):
-    return self.name
 
 
 class Patient(models.Model):
@@ -152,14 +146,14 @@ class Patient(models.Model):
 
 
 class Pstatus(models.Model):
-    p = models.OneToOneField(Patient, models.DO_NOTHING, primary_key=True)
-    status = models.IntegerField(verbose_name='状态')
-    day = models.DateField(verbose_name='日期')
+    p = models.ForeignKey(Patient, models.DO_NOTHING, "病人ID")
+    status = models.IntegerField(verbose_name="当前状态")
+    day = models.DateField(verbose_name="日期")
+    s_id = models.AutoField(primary_key=True)
 
     class Meta:
         managed = False
         db_table = 'pstatus'
-        unique_together = (('p', 'status'),)
         verbose_name_plural = verbose_name = '病人状态'
 
 
@@ -182,11 +176,11 @@ class Supplies(models.Model):
 class Track(models.Model):
     p = models.OneToOneField(Patient, models.DO_NOTHING, primary_key=True)
     date_time = models.DateTimeField()
-    longitude = models.FloatField()
-    latitude = models.FloatField()
-    description = models.CharField(max_length=256, blank=True, null=True)
-    location = models.CharField(max_length=256, blank=True, null=True)
-    district = models.CharField(max_length=256, blank=True, null=True)
+    longitude = models.FloatField(verbose_name="经度")
+    latitude = models.FloatField(verbose_name="纬度")
+    description = models.CharField(max_length=256, blank=True, null=True, verbose_name="描述")
+    location = models.CharField(max_length=256, blank=True, null=True, verbose_name="位置")
+    district = models.CharField(max_length=256, blank=True, null=True, verbose_name="区域")
 
     class Meta:
         managed = False
